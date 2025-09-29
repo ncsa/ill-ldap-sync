@@ -1,0 +1,205 @@
+#!/bin/bash
+#set -x
+
+user_in=${1,,}
+nodemap_dir=/taiga/admin/iccp/nodemap
+user_nodemap=${nodemap_dir}/user.nodemap.current
+group_nodemap=${nodemap_dir}/group.combinedmap.current
+
+declare -g -A output_data
+
+function print_usage(){
+    cat <<EOF >&2
+Usage: $0 [-y] <-u userid|-g group_name>
+    -y    output csv
+    -u    -u <userid>
+    -g    -g <group_name>
+EOF
+    exit 1
+}
+
+function check_user(){
+    local user=$1 
+
+    OFS=$IFS
+    while IFS=',' read -ra userLine
+    do
+        if [[ "${userLine[0]}" == "$user" ]]; then
+            # ad account found in nodemap
+	    output_data['aduid']="${userLine[0]}"
+	    output_data['aduidnum']="${userLine[1]}"
+	    output_data['ldapuid']="${userLine[2]}"
+	    output_data['ldapuidnum']="${userLine[3]}"
+        elif [[ "${userLine[2]}" == "$user" ]]; then
+            output_data['aduid']="${userLine[0]}"
+            output_data['aduidnum']="${userLine[1]}"
+            output_data['ldapuid']="${userLine[2]}"
+            output_data['ldapuidnum']="${userLine[3]}"
+	else 
+	    echo "User $user not found"
+	    exit 1
+        fi
+    done < <(awk -F',' -v u="$user" '{if ($1 == u) print $0; else if ($3 == u) print $0;}' ${user_nodemap})
+    IFS=$OFS
+}    
+
+function check_group(){
+    local group=$1
+
+    OFS=$IFS
+    while IFS=',' read -ra groupLine
+    do
+        if [[ "${groupLine[0]}" == "$group" ]]; then
+            output_data['adname']="${groupLine[0]}"
+	    output_data['adgid']="${groupLine[1]}"
+	    output_data['ldapname']="${groupLine[2]}"
+	    output_data['ldapgid']="${groupLine[3]}"
+	elif [[ "${groupLine[2]}" == "$group" ]]; then
+            output_data['adname']="${groupLine[0]}"
+            output_data['adgid']="${groupLine[1]}"
+            output_data['ldapname']="${groupLine[2]}"
+            output_data['ldapgid']="${groupLine[3]}"
+        else
+            echo "Group $group not found"
+	    exit 1
+        fi
+    done < <(awk -F',' -v g="$group" '{if ($1 == g) print $0; else if ($3 == g) print $0;}' ${group_nodemap})
+    IFS=$OFS
+}
+
+
+function print_table(){
+    local -n index_array="$1"
+    local -n keys="$2"
+
+    # Calculate maximum lengths for indexes and values
+    max_idx_len=0
+    max_value_len=0
+
+    declare -A col_width
+
+    for key in "${keys[@]}"; do
+        max_length=${#key}
+	for arr_name in "${index_array[@]}"; do
+            declare -n this_arr="$arr_name"
+	    value_length=${#this_arr[$key]}
+	    if (( value_length > max_length )); then
+                max_length=$value_length
+            fi
+        done
+        col_width[$key]=$max_length
+    done
+
+    for key in "${keys[@]}"; do
+        printf '+%s' "$(printf '%*s' $((col_width[$key]+2)) | tr ' ' '-')"
+    done
+    printf '+\n'
+
+    for key in "${keys[@]}"; do
+        printf "| %-*s " "${col_width[$key]}" "$key"
+    done
+    printf '|\n'
+
+    for key in "${keys[@]}"; do
+        printf '+%s' "$(printf '%*s' $((col_width[$key]+2)) | tr ' ' '-')"
+    done
+    printf '+\n'
+
+    for arr_name in "${index_array[@]}"; do
+        declare -n arr_rows=$arr_name
+	for key in "${keys[@]}"; do
+            printf "| %-*s " "${col_width[$key]}" "${arr_rows[$key]}"
+        done
+        printf "|\n"
+    done
+
+    for key in "${keys[@]}"; do
+        printf '+%s' "$(printf '%*s' $((col_width[$key]+2)) | tr ' ' '-')"
+    done
+    printf '+\n'
+}
+
+function print_csv(){
+    local -n data_array="$1"
+    local -n data_keys="$2"
+
+    declare -a order_data
+    for key in "${data_keys[@]}"; do
+        order_data+=("${data_array[$key]}")
+    done
+ 
+    OFS="$IFS"
+    IFS=","
+    printf '%s\n' "${data_keys[*]}"
+    printf '%s\n' "${order_data[*]}"
+    IFS="$OFS"
+}
+
+if [ "$#" -lt 2 ]; then
+    print_usage
+fi
+
+csvout=false
+optlist="yu:g:"
+## check for -y first in case it's not the first argument
+while getopts "$optlist" opt; do
+    case $opt in
+        y)
+            csvout=true
+    esac
+done
+
+# reset opt index to 1
+OPTIND=1
+
+## process options
+while getopts "$optlist" opt; do
+    case $opt in
+        y)
+            csvout=true
+            ;;
+        u)
+	    check_user $OPTARG
+	    if [[ ${#output_data[@]} -ne 0 ]]; then
+                if [ "$csvout" == true ]; then
+                    declare -a out_keys=("aduid" "aduidnum" "ldapuid" "ldapuidnum")
+                    print_csv output_data out_keys
+                else 
+                    declare -a out_keys=("idx" "AD" "LDAP")
+                    declare -A out_login=([idx]="login" [AD]="${output_data['aduid']}" [LDAP]="${output_data['ldapuid']}")
+                    declare -A out_uidnum=([idx]="uidNumber" [AD]="${output_data['aduidnum']}" [LDAP]="${output_data['ldapuidnum']}")
+                    declare -a format_out=("out_login" "out_uidnum")
+       	    
+       	            print_table format_out out_keys
+                fi
+
+		declare -A output_data=()
+            else
+		echo "User $OPTARG not found"
+            fi
+	    ;;
+        g)
+            check_group $OPTARG
+            if [[ ${#output_data[@]} -ne 0 ]]; then
+                if [ "$csvout" == true ]; then
+                    declare -a out_keys=("adname" "adgid" "ldapname" "ldapgid")
+                    print_csv output_data out_keys
+                else
+                    declare -a out_keys=("idx" "AD" "LDAP")
+                    declare -A out_login=([idx]="group" [AD]="${output_data['adname']}" [LDAP]="${output_data['ldapname']}")
+                    declare -A out_uidnum=([idx]="gidNumber" [AD]="${output_data['adgid']}" [LDAP]="${output_data['ldapgid']}")
+                    declare -a format_out=("out_login" "out_uidnum")
+                    
+                    print_table format_out out_keys
+                fi
+		declare -A output_data=()
+            else
+                echo "Group $OPTARG not found"
+            fi
+	    ;;
+        \?)
+            echo "Usage: $0 -u [userid]|-g [group_name]" >&2
+	    exit 1
+	    ;;
+    esac
+done

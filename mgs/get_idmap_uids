@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ -z $NODEMAP_NAME ]]; then
+    NODEMAP_NAME=$1
+fi
+
+LCTL=/usr/sbin/lctl
+GREP=/usr/bin/grep
+AWK=/usr/bin/awk
+UIDMAP=/root/nodemap/uid.lustre.idmap
+
+$LCTL get_param nodemap.$NODEMAP_NAME.idmap | $GREP uid, | $AWK '{print $5$7}'| $GREP -v ^$ > $UIDMAP

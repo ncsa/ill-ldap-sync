@@ -1,0 +1,62 @@
+[AD]
+server = AD_DC_address
+user = Full_DN_of_service_account
+password = 
+user_search_base = user search base
+user_search_filter = ldap filter 
+user_search_scope = SUBTREE
+user_search_attributes = displayName, sAMAccountName, mail, uidNumber, uiucEduFirstName, uiucEduLastName
+group_search_base = group search base
+group_search_filter = (&(objectCategory=group))
+group_search_scope = SUBTREE
+group_search_attributes = name, displayName, gidNumber, member
+add_users_group = DN of group with extra users to add
+
+
+[LDAP]
+server = ldap server address
+user = 
+password = 
+user_search_base = user search base
+user_search_filter = ldap filter
+user_search_scope = SUBTREE
+user_search_attributes = uid, uidNumber, mail 
+group_search_base = group search base
+group_search_filter = ldap filter for groups
+group_search_scope = SUBTREE
+group_search_attributes = cn, gidNumber, uniqueMember
+group_file = group.ldap.current
+group_ad_file = group.ad.current
+group_prefix = prefix to be used when inserting AD groups into LDAP
+user_file = user.ldap.current
+directory = directory for storing ldap specifc processing files (usually just the same as the rest)
+mail_domain = mail domain for matching users between AD and LDAP
+
+[NODEMAP]
+directory = directory for storing nodemap processing files
+group = group.nodeman.current
+groupcombined = group.combinedmap.current
+user = user.nodemap.current
+passwd = passwd.extras.current
+shadow = shadow.extras.current
+maptoldap = user.mappedtoldap
+mismatchuids = user.mismatchuids
+maptoldapgid = group.mappedtoldap
+mismatchgids = group.mismatchgids
+logfile = /path/to/logs/user_nodemap.log
+
+[LUSTRE]
+directory = directory for nodemap files (usually the same as all the others)
+user_idmap = uid.lustre.idmap
+group_idmap = gid.lustre.idmap
+new_uids = uid.lustre.new
+new_gids = gid.lustre.new
+
+[LDAP_SYNC]
+directory = directory for ldap to ad group sync processing files (usually the same as the rest)
+map = group.ldapsync.current
+next_ad_gid_dn = DN of group object to hold next available gid
+groups_ou = OU to hold groups synced from LDAP into AD
+prefix = prefix for AD groups inserted from LDAP
+combined_sync_users_group = CN of combined group holding all users synced from LDAP to AD groups
+combined_sync_users_groupdn = DN of combined group holding all users synced from LDAP to AD groups

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+thishost=$(hostname -s)
+
+exec /taiga/admin/iccp/nodemap/venv_${thishost}/bin/python3 $@

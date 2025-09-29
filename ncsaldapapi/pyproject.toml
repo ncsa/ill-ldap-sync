@@ -1,0 +1,14 @@
+[project]
+name = "ncsaldapapi"
+version = "0.03"
+authors = [
+  { name="Sean Stevens", email="sstevens@illinois.edu" },
+]
+description = "NCSA ICCP LDAP API"
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"

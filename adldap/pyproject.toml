@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "adldap"
+version = "0.4.3"
+authors = [
+  { name="Sean Stevens", email="sstevens@illinois.edu" },
+]
+description = "NCSA AD LDAP Sync"
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"

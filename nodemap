@@ -1,0 +1,44 @@
+#!/bin/bash
+
+nodemap_dir=/taiga/admin/iccp/nodemap
+# Display usage information
+usage() {
+  echo "Usage: $0 <command>"
+  echo "Commands:"
+  echo "  add_group           - Executess add_group with the passed args"
+  echo "  add_ldap_ad_group   - Executes add_ldap_ad_group with passed args"
+  echo "  add_user            - Executes add_user with passed args"
+  echo "  info                - Executes nodemap_info with passed args"
+  echo "  help                - Display this message"
+  exit 1
+}
+
+# Check for no arguments, display usage
+if [ $# -eq 0 ]; then
+  usage
+fi
+
+# Command selection based on user input
+first=$1
+shift
+case "$first" in
+    add_group)
+        exec ${nodemap_dir}/bin/add_group.py "$@"
+        ;;
+    add_ldap_ad_group)
+        exec ${nodemap_dir}/bin/add_ldap_ad_group.py "$@"
+        ;;
+    add_user)
+        exec ${nodemap_dir}/bin/add_user.py "$@"
+        ;;
+    info)
+        exec ${nodemap_dir}/bin/nodemap_info "$@"
+	;;
+    help)
+        usage
+        ;;
+    *)
+        echo "Error: Invalid command '$1'"
+        usage
+        ;;
+esac
